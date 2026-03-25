@@ -654,7 +654,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 7
+  m_Constraints: 5
 --- !u!1 &449575391
 GameObject:
   m_ObjectHideFlags: 0
@@ -1333,6 +1333,11 @@ MonoBehaviour:
   velocidadRapida: 5
   fuerzaSaltoX: -4
   fuerzaSaltoY: 8
+  groundCheck: {fileID: 0}
+  radioCheck: 0.2
+  capaSuelo:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!61 &955721665
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1480,7 +1485,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossCollision
   danio: 1
-  tiempoEntreGolpes: 2
+  tiempoEntreGolpes: 1.5
   distanciaRetroceso: 6
   velocidadRetroceso: 5
 --- !u!50 &955721670

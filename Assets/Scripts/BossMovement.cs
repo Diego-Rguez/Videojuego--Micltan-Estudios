@@ -4,11 +4,16 @@ public class BossMovement : MonoBehaviour
 {
     [SerializeField] private float velocidadNormal = 1.5f;
     [SerializeField] private float velocidadRapida = 2.5f;
+    [SerializeField] private float fuerzaSaltoX = -5f;
+    [SerializeField] private float fuerzaSaltoY = 10f;
 
+    private Rigidbody2D rb;
+    private bool estaSaltando;
     private float tiempoEnEstado;
     private float duracionEstado;
     private bool estaCaminando;
     private Camera camara;
+    
 
     void Start()
     {
@@ -16,6 +21,7 @@ public class BossMovement : MonoBehaviour
         estaCaminando = true;
         duracionEstado = Random.Range(1f, 4f);
         tiempoEnEstado = 0f;
+        rb = GetComponent<Rigidbody2D>();
     }
 
     void Update()
@@ -27,6 +33,8 @@ public class BossMovement : MonoBehaviour
             CambiarEstado();
         }
 
+        if (estaSaltando) return;
+
         if (EstaSaliendoDeCamara())
         {
             MoverseAIzquierda(velocidadRapida);
@@ -35,6 +43,7 @@ public class BossMovement : MonoBehaviour
         {
             MoverseAIzquierda(velocidadNormal);
         }
+
     }
 
     private void MoverseAIzquierda(float velocidad)
@@ -51,15 +60,38 @@ public class BossMovement : MonoBehaviour
     private void CambiarEstado()
     {
         tiempoEnEstado = 0f;
-        estaCaminando = !estaCaminando;
 
-        if (estaCaminando)
+        int estado = Random.Range(0, 3); // 0 = idle, 1 = caminar, 2 = salto
+
+        if (estado == 0)
         {
-            duracionEstado = Random.Range(1f, 4f);
-        }
-        else
-        {
+            estaCaminando = false;
+            estaSaltando = false;
             duracionEstado = Random.Range(1f, 3f);
         }
+        else if (estado == 1)
+        {
+            estaCaminando = true;
+            estaSaltando = false;
+            duracionEstado = Random.Range(1f, 4f);
+        }
+        else if (estado == 2)
+        {
+            estaSaltando = true;
+            estaCaminando = false;
+            Saltar();
+            duracionEstado = 2f; // tiempo del salto
+        }
+    }
+
+    private void Saltar()
+    {
+        rb.linearVelocity = new Vector2(fuerzaSaltoX, fuerzaSaltoY);
+        Invoke(nameof(TerminarSalto), 0.8f);
+    }
+
+    private void TerminarSalto()
+    {
+        estaSaltando = false;
     }
 }

@@ -5,8 +5,8 @@ public class BossCollision : MonoBehaviour
 {
     [SerializeField] private int danio = 1;
     [SerializeField] private float tiempoEntreGolpes = 1.5f;
-    [SerializeField] private float distanciaRetroceso = 18f;
-    [SerializeField] private float velocidadRetroceso = 6f;
+    [SerializeField] private float distanciaRetroceso = 100f;
+    [SerializeField] private float velocidadRetroceso = 7f;
 
     private float timerGolpe;
     private bool retrocediendo = false;
