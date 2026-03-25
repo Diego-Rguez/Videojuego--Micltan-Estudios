@@ -29,5 +29,6 @@ public class BossHealth : MonoBehaviour
     {
         Debug.Log("El boss murio");
         gameObject.SetActive(false);
+        GameManager.Instancia.TriggerVictoria();
     }
 }

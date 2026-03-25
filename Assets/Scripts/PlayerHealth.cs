@@ -29,5 +29,6 @@ public class PlayerHealth : MonoBehaviour
     {
         Debug.Log("El jugador murio");
         gameObject.SetActive(false);
+        GameManager.Instancia.TriggerGameOver();
     }
 }

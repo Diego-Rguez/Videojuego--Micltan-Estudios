@@ -2,10 +2,17 @@ using UnityEngine;
 
 public class BossMovement : MonoBehaviour
 {
+    [Header("Velocidades")]
     [SerializeField] private float velocidadNormal = 1.5f;
     [SerializeField] private float velocidadRapida = 2.5f;
+
+    [Header("Salto")]
     [SerializeField] private float fuerzaSaltoX = -5f;
     [SerializeField] private float fuerzaSaltoY = 10f;
+
+    [Header("Límites")]
+    [SerializeField] private Transform jugador;
+    [SerializeField] private float distanciaMinima = 1f;
 
     private Rigidbody2D rb;
     private bool estaSaltando;
@@ -13,7 +20,6 @@ public class BossMovement : MonoBehaviour
     private float duracionEstado;
     private bool estaCaminando;
     private Camera camara;
-    
 
     void Start()
     {
@@ -27,7 +33,6 @@ public class BossMovement : MonoBehaviour
     void Update()
     {
         tiempoEnEstado += Time.deltaTime;
-
         if (tiempoEnEstado >= duracionEstado)
         {
             CambiarEstado();
@@ -43,7 +48,41 @@ public class BossMovement : MonoBehaviour
         {
             MoverseAIzquierda(velocidadNormal);
         }
+    }
 
+    void LateUpdate()
+    {
+        if (jugador != null)
+        {
+            // Límite izquierdo — no puede pasar al lado del jugador
+            float limiteIzquierdo = jugador.position.x + distanciaMinima;
+            if (transform.position.x < limiteIzquierdo)
+            {
+                transform.position = new Vector3(
+                    limiteIzquierdo,
+                    transform.position.y,
+                    transform.position.z
+                );
+                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+                estaSaltando = false;
+            }
+
+            // Límite derecho — no puede salirse de la cámara
+            // Después
+            float anchoBoss = GetComponent<SpriteRenderer>() != null
+                ? GetComponent<SpriteRenderer>().bounds.extents.x
+                : 0.5f;
+            float limiteDerecho = camara.ViewportToWorldPoint(new Vector3(1, 0, 0)).x - anchoBoss;
+            if (transform.position.x > limiteDerecho)
+            {
+                transform.position = new Vector3(
+                    limiteDerecho,
+                    transform.position.y,
+                    transform.position.z
+                );
+                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+            }
+        }
     }
 
     private void MoverseAIzquierda(float velocidad)
@@ -60,8 +99,7 @@ public class BossMovement : MonoBehaviour
     private void CambiarEstado()
     {
         tiempoEnEstado = 0f;
-
-        int estado = Random.Range(0, 3); // 0 = idle, 1 = caminar, 2 = salto
+        int estado = Random.Range(0, 3);
 
         if (estado == 0)
         {
@@ -80,7 +118,7 @@ public class BossMovement : MonoBehaviour
             estaSaltando = true;
             estaCaminando = false;
             Saltar();
-            duracionEstado = 2f; // tiempo del salto
+            duracionEstado = 2f;
         }
     }
 
