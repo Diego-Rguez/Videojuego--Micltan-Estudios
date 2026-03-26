@@ -5,16 +5,13 @@ public class BossCollision : MonoBehaviour
 {
     [SerializeField] private int danio = 1;
     [SerializeField] private float tiempoEntreGolpes = 1.5f;
-    [SerializeField] private float distanciaRetroceso = 25f;
-    [SerializeField] private float velocidadRetroceso = 7f;
 
     private float timerGolpe;
-    private bool retrocediendo = false;
-    private Camera camara;
+    private BossMovement bossMovement;
 
     void Start()
     {
-        camara = Camera.main;
+        bossMovement = GetComponent<BossMovement>();
     }
 
     void Update()
@@ -30,47 +27,15 @@ public class BossCollision : MonoBehaviour
         if (collision.gameObject.CompareTag("Player") && timerGolpe <= 0)
         {
             PlayerHealth playerHealth = collision.gameObject.GetComponent<PlayerHealth>();
-            if (playerHealth != null && !retrocediendo)
+
+            if (playerHealth != null)
             {
                 playerHealth.RecibirDanio(danio);
                 timerGolpe = tiempoEntreGolpes;
-                StartCoroutine(RetrocederSuavemente());
+
+                // Le dice al BossMovement que regrese
+                bossMovement.Regresar();
             }
         }
-    }
-
-    private IEnumerator RetrocederSuavemente()
-    {
-        retrocediendo = true;
-
-        Vector3 posicionDestino = new Vector3(
-            transform.position.x + distanciaRetroceso,
-            transform.position.y,
-            transform.position.z
-        );
-
-        // Calcula el límite derecho de la cámara con margen del ancho del boss
-        float anchoBoss = GetComponent<SpriteRenderer>() != null
-            ? GetComponent<SpriteRenderer>().bounds.extents.x
-            : 0.5f;
-        float limiteDerecho = camara.ViewportToWorldPoint(new Vector3(1, 0, 0)).x - anchoBoss;
-
-        // Recorta el destino si se pasa del límite de cámara
-        if (posicionDestino.x > limiteDerecho)
-        {
-            posicionDestino.x = limiteDerecho;
-        }
-
-        while (Vector3.Distance(transform.position, posicionDestino) > 0.05f)
-        {
-            transform.position = Vector3.MoveTowards(
-                transform.position,
-                posicionDestino,
-                velocidadRetroceso * Time.deltaTime
-            );
-            yield return null;
-        }
-
-        retrocediendo = false;
     }
 }
