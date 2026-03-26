@@ -1,135 +1,151 @@
 using UnityEngine;
+using System.Collections;
 
 public class BossMovement : MonoBehaviour
 {
     [Header("Velocidades")]
-    [SerializeField] private float velocidadNormal = 1.5f;
-    [SerializeField] private float velocidadRapida = 2.5f;
+    [SerializeField] private float velocidadCaminar = 4.5f;
+    [SerializeField] private float velocidadRegresar = 8f;
 
     [Header("Salto")]
-    [SerializeField] private float fuerzaSaltoX = -5f;
+    [SerializeField] private float fuerzaSaltoX = -7f;
     [SerializeField] private float fuerzaSaltoY = 10f;
+    [SerializeField] private float duracionSalto = 0.8f;
 
-    [Header("Límites")]
-    [SerializeField] private Transform jugador;
-    [SerializeField] private float distanciaMinima = 1f;
+    [Header("Tiempos")]
+    [SerializeField] private float tiempoEsperaMinimo = 0.3f;
+    [SerializeField] private float tiempoEsperaMaximo = 1f;
+    [SerializeField] private float probabilidadSalto = 0.6f;
+
+    [Header("Límite Cámara")]
+    [SerializeField] private float margenCamara = 1f;
 
     private Rigidbody2D rb;
-    private bool estaSaltando;
+    private Camera camara;
+    private float posicionInicialX;
+
+    // Estados del boss
+    public enum EstadoBoss { Idle, Caminando, Saltando, Regresando }
+    public EstadoBoss estadoActual = EstadoBoss.Idle;
+
     private float tiempoEnEstado;
     private float duracionEstado;
-    private bool estaCaminando;
-    private Camera camara;
 
     void Start()
     {
         camara = Camera.main;
-        estaCaminando = true;
-        duracionEstado = Random.Range(1f, 4f);
-        tiempoEnEstado = 0f;
         rb = GetComponent<Rigidbody2D>();
+        posicionInicialX = transform.position.x;
+        CambiarEstado(EstadoBoss.Caminando);
     }
 
     void Update()
     {
+        if (estadoActual == EstadoBoss.Regresando) return;
+
+        ClampPosicionCamara();
+
         tiempoEnEstado += Time.deltaTime;
         if (tiempoEnEstado >= duracionEstado)
         {
-            CambiarEstado();
+            ElegirSiguienteEstado();
         }
 
-        if (estaSaltando) return;
-
-        if (EstaSaliendoDeCamara())
+        if (estadoActual == EstadoBoss.Caminando)
         {
-            MoverseAIzquierda(velocidadRapida);
-        }
-        else if (estaCaminando)
-        {
-            MoverseAIzquierda(velocidadNormal);
+            transform.Translate(Vector2.left * velocidadCaminar * Time.deltaTime);
         }
     }
 
-    void LateUpdate()
+    private void ClampPosicionCamara()
     {
-        if (jugador != null)
+        float limiteDerecho = camara.ViewportToWorldPoint(new Vector3(1, 0, 0)).x - margenCamara;
+        if (transform.position.x > limiteDerecho)
         {
-            // Límite izquierdo — no puede pasar al lado del jugador
-            float limiteIzquierdo = jugador.position.x + distanciaMinima;
-            if (transform.position.x < limiteIzquierdo)
-            {
-                transform.position = new Vector3(
-                    limiteIzquierdo,
-                    transform.position.y,
-                    transform.position.z
-                );
-                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-                estaSaltando = false;
-            }
-
-            // Límite derecho — no puede salirse de la cámara
-            // Después
-            float anchoBoss = GetComponent<SpriteRenderer>() != null
-                ? GetComponent<SpriteRenderer>().bounds.extents.x
-                : 0.5f;
-            float limiteDerecho = camara.ViewportToWorldPoint(new Vector3(1, 0, 0)).x - anchoBoss;
-            if (transform.position.x > limiteDerecho)
-            {
-                transform.position = new Vector3(
-                    limiteDerecho,
-                    transform.position.y,
-                    transform.position.z
-                );
-                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-            }
+            transform.position = new Vector3(limiteDerecho, transform.position.y, transform.position.z);
+            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
         }
     }
 
-    private void MoverseAIzquierda(float velocidad)
-    {
-        transform.Translate(Vector2.left * velocidad * Time.deltaTime);
-    }
 
-    private bool EstaSaliendoDeCamara()
+    private void ElegirSiguienteEstado()
     {
-        float limiteDerecho = camara.ViewportToWorldPoint(new Vector3(1, 0, 0)).x;
-        return transform.position.x > limiteDerecho - 1f;
-    }
-
-    private void CambiarEstado()
-    {
-        tiempoEnEstado = 0f;
-        int estado = Random.Range(0, 3);
-
-        if (estado == 0)
+        if (Random.value < probabilidadSalto)
         {
-            estaCaminando = false;
-            estaSaltando = false;
-            duracionEstado = Random.Range(1f, 3f);
+            CambiarEstado(EstadoBoss.Saltando);
         }
-        else if (estado == 1)
+        else
         {
-            estaCaminando = true;
-            estaSaltando = false;
-            duracionEstado = Random.Range(1f, 4f);
-        }
-        else if (estado == 2)
-        {
-            estaSaltando = true;
-            estaCaminando = false;
-            Saltar();
-            duracionEstado = 2f;
+            CambiarEstado(EstadoBoss.Caminando);
         }
     }
 
-    private void Saltar()
+
+private void CambiarEstado(EstadoBoss nuevoEstado)
+{
+    estadoActual = nuevoEstado;
+    tiempoEnEstado = 0f;
+
+    if (nuevoEstado == EstadoBoss.Caminando)
     {
+        duracionEstado = Random.Range(1f, 3f);
+        rb.linearVelocity = Vector2.zero;
+    }
+    else if (nuevoEstado == EstadoBoss.Saltando)
+    {
+        duracionEstado = duracionSalto + 1f; // Tiempo extra para que pueda golpear
         rb.linearVelocity = new Vector2(fuerzaSaltoX, fuerzaSaltoY);
-        Invoke(nameof(TerminarSalto), 0.8f);
+        StartCoroutine(TerminarSalto());
+    }
+}
+
+private IEnumerator TerminarSalto()
+{
+    yield return new WaitForSeconds(duracionSalto);
+
+    // Al terminar el salto solo cancela la velocidad horizontal
+    // NO llama Regresar() — eso lo hace BossCollision al golpear
+    if (estadoActual == EstadoBoss.Saltando)
+    {
+        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        // Si no golpeó a nadie, camina normalmente
+        CambiarEstado(EstadoBoss.Caminando);
+    }
+}
+    public void Regresar()
+    {
+        if (estadoActual == EstadoBoss.Regresando) return;
+        StartCoroutine(RegresarAPosicionInicial());
     }
 
-    private void TerminarSalto()
+    private IEnumerator RegresarAPosicionInicial()
     {
-        estaSaltando = false;
+        estadoActual = EstadoBoss.Regresando;
+
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+
+        // Calcula el límite de cámara y respeta el que sea menor
+        float limiteDerecho = camara.ViewportToWorldPoint(new Vector3(1, 0, 0)).x - margenCamara;
+        float destinoX = Mathf.Min(posicionInicialX, limiteDerecho);
+
+        Vector3 destino = new Vector3(destinoX, transform.position.y, transform.position.z);
+
+        while (Vector3.Distance(transform.position, destino) > 0.1f)
+        {
+            transform.position = Vector3.MoveTowards(
+                transform.position,
+                destino,
+                velocidadRegresar * Time.deltaTime
+            );
+            yield return null;
+        }
+
+        transform.position = destino;
+
+        float espera = Random.Range(tiempoEsperaMinimo, tiempoEsperaMaximo);
+        yield return new WaitForSeconds(espera);
+
+        CambiarEstado(EstadoBoss.Caminando);
     }
 }
