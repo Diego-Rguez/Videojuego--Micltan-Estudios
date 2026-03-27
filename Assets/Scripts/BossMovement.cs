@@ -4,7 +4,7 @@ using System.Collections;
 public class BossMovement : MonoBehaviour
 {
     [Header("Velocidades")]
-    [SerializeField] private float velocidadCaminar = 4.5f;
+    [SerializeField] private float velocidadCaminar = 1.8f;
     [SerializeField] private float velocidadRegresar = 8f;
 
     [Header("Salto")]
@@ -81,37 +81,37 @@ public class BossMovement : MonoBehaviour
     }
 
 
-private void CambiarEstado(EstadoBoss nuevoEstado)
-{
-    estadoActual = nuevoEstado;
-    tiempoEnEstado = 0f;
-
-    if (nuevoEstado == EstadoBoss.Caminando)
+    private void CambiarEstado(EstadoBoss nuevoEstado)
     {
-        duracionEstado = Random.Range(1f, 3f);
-        rb.linearVelocity = Vector2.zero;
-    }
-    else if (nuevoEstado == EstadoBoss.Saltando)
-    {
-        duracionEstado = duracionSalto + 1f; // Tiempo extra para que pueda golpear
-        rb.linearVelocity = new Vector2(fuerzaSaltoX, fuerzaSaltoY);
-        StartCoroutine(TerminarSalto());
-    }
-}
+        estadoActual = nuevoEstado;
+        tiempoEnEstado = 0f;
 
-private IEnumerator TerminarSalto()
-{
-    yield return new WaitForSeconds(duracionSalto);
-
-    // Al terminar el salto solo cancela la velocidad horizontal
-    // NO llama Regresar() — eso lo hace BossCollision al golpear
-    if (estadoActual == EstadoBoss.Saltando)
-    {
-        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-        // Si no golpeó a nadie, camina normalmente
-        CambiarEstado(EstadoBoss.Caminando);
+        if (nuevoEstado == EstadoBoss.Caminando)
+        {
+            duracionEstado = Random.Range(1f, 3f);
+            rb.linearVelocity = Vector2.zero;
+        }
+        else if (nuevoEstado == EstadoBoss.Saltando)
+        {
+            duracionEstado = duracionSalto + 1f; // Tiempo extra para que pueda golpear
+            rb.linearVelocity = new Vector2(fuerzaSaltoX, fuerzaSaltoY);
+            StartCoroutine(TerminarSalto());
+        }
     }
-}
+
+    private IEnumerator TerminarSalto()
+    {
+        yield return new WaitForSeconds(duracionSalto);
+
+        // Al terminar el salto solo cancela la velocidad horizontal
+        // NO llama Regresar() — eso lo hace BossCollision al golpear
+        if (estadoActual == EstadoBoss.Saltando)
+        {
+            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+            // Si no golpeó a nadie, camina normalmente
+            CambiarEstado(EstadoBoss.Caminando);
+        }
+    }
     public void Regresar()
     {
         if (estadoActual == EstadoBoss.Regresando) return;
@@ -142,6 +142,9 @@ private IEnumerator TerminarSalto()
         }
 
         transform.position = destino;
+
+        transform.rotation = Quaternion.identity;
+        rb.angularVelocity = 0f;
 
         float espera = Random.Range(tiempoEsperaMinimo, tiempoEsperaMaximo);
         yield return new WaitForSeconds(espera);
