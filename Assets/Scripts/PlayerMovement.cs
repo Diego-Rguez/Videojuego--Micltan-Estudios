@@ -15,6 +15,7 @@ public class PlayerMovement : MonoBehaviour
     private float velocidadVertical = 0f;
     private bool enElSuelo = true;
     private float posicionYInicial;
+    private bool estaDisparando = false;
 
     void Start()
     {
@@ -29,6 +30,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void ManejarMovimientoHorizontal()
     {
+        if (estaDisparando) return;
+
         float horizontalInput = Input.GetAxisRaw("Horizontal");
 
         if (horizontalInput > 0) horizontalInput = 0;
@@ -46,20 +49,17 @@ public class PlayerMovement : MonoBehaviour
 
     private void ManejarBrinco()
     {
-        // Detecta input de brinco solo si está en el suelo
         if ((Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) && enElSuelo)
         {
             velocidadVertical = fuerzaBrinco;
             enElSuelo = false;
         }
 
-        // Aplica gravedad manual cuando está en el aire
         if (!enElSuelo)
         {
             velocidadVertical -= gravedad * Time.deltaTime;
             transform.position += Vector3.up * velocidadVertical * Time.deltaTime;
 
-            // Verifica si ya tocó el suelo (su posición Y inicial)
             if (transform.position.y <= posicionYInicial)
             {
                 Vector3 pos = transform.position;
@@ -70,5 +70,15 @@ public class PlayerMovement : MonoBehaviour
                 enElSuelo = true;
             }
         }
+    }
+
+    public void BloquearMovimiento()
+    {
+        estaDisparando = true;
+    }
+
+    public void DesbloquearMovimiento()
+    {
+        estaDisparando = false;
     }
 }

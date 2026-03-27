@@ -17,6 +17,12 @@ public class BowController : MonoBehaviour
     private float tiempoCargaActual = 0f;
     private bool cargando = false;
     private Vector2 direccionDisparo;
+    private PlayerMovement playerMovement;
+
+    void Start()
+    {
+        playerMovement = GetComponentInParent<PlayerMovement>();
+    }
 
     void Update()
     {
@@ -38,48 +44,19 @@ public class BowController : MonoBehaviour
         }
     }
 
-    private void ApuntarConMouse()
-    {
-        Vector3 posicionMouse = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        posicionMouse.z = 0f;
-
-        direccionDisparo = (posicionMouse - puntoDeDisparo.position).normalized;
-
-        float angulo = Mathf.Atan2(direccionDisparo.y, direccionDisparo.x) * Mathf.Rad2Deg;
-
-        // Limita el ángulo entre -80° y 80° (no puede apuntar hacia atrás)
-        angulo = Mathf.Clamp(angulo, -80f, 80f);
-
-        // Recalcula la dirección con el ángulo ya limitado
-        float anguloRad = angulo * Mathf.Deg2Rad;
-        direccionDisparo = new Vector2(Mathf.Cos(anguloRad), Mathf.Sin(anguloRad));
-
-        transform.rotation = Quaternion.AngleAxis(angulo, Vector3.forward);
-    }
-
     private void IniciarCarga()
     {
         tiempoCargaActual = 0f;
         cargando = true;
         lineaTrayectoria.enabled = true;
-    }
-
-    private void Cargar()
-    {
-        // Acumula el tiempo de carga sin pasarse del máximo
-        tiempoCargaActual = Mathf.Min(tiempoCargaActual + Time.deltaTime, tiempoCargaMaxima);
-
-        // Actualiza la trayectoria en pantalla mientras cargas
-        MostrarTrayectoria();
+        playerMovement?.BloquearMovimiento();
     }
 
     private void Disparar()
     {
-        // La velocidad final depende de cuánto cargaste (0% a 100%)
         float porcentajeCarga = tiempoCargaActual / tiempoCargaMaxima;
         float velocidadFinal = velocidadFlecha * porcentajeCarga;
 
-        // Solo dispara si cargó al menos un 10% para evitar disparos accidentales
         if (porcentajeCarga >= 0.1f)
         {
             GameObject flechaObj = Instantiate(flechaPrefab, puntoDeDisparo.position, Quaternion.identity);
@@ -91,10 +68,10 @@ public class BowController : MonoBehaviour
             }
         }
 
-        // Resetea el estado
         tiempoCargaActual = 0f;
         cargando = false;
         lineaTrayectoria.enabled = false;
+        playerMovement?.DesbloquearMovimiento();
     }
 
     private void MostrarTrayectoria()
@@ -119,5 +96,26 @@ public class BowController : MonoBehaviour
             velocidadSim.y -= gravedad * intervalo;
             posicionSim += (Vector3)velocidadSim * intervalo;
         }
+    }
+    private void ApuntarConMouse()
+    {
+        Vector3 posicionMouse = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        posicionMouse.z = 0f;
+
+        direccionDisparo = (posicionMouse - puntoDeDisparo.position).normalized;
+
+        float angulo = Mathf.Atan2(direccionDisparo.y, direccionDisparo.x) * Mathf.Rad2Deg;
+        angulo = Mathf.Clamp(angulo, -80f, 80f);
+
+        float anguloRad = angulo * Mathf.Deg2Rad;
+        direccionDisparo = new Vector2(Mathf.Cos(anguloRad), Mathf.Sin(anguloRad));
+
+        transform.rotation = Quaternion.AngleAxis(angulo, Vector3.forward);
+    }
+
+    private void Cargar()
+    {
+        tiempoCargaActual = Mathf.Min(tiempoCargaActual + Time.deltaTime, tiempoCargaMaxima);
+        MostrarTrayectoria();
     }
 }
