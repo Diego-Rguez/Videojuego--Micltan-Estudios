@@ -60,7 +60,16 @@ public class GameManager : MonoBehaviour
     {
         if (juegoTerminado) return;
         juegoTerminado = true;
-        StartCoroutine(MostrarPantallaConPausa(pantallaVictoria));
+        StartCoroutine(VictoriaConSlowMotion());
+    }
+
+    private IEnumerator VictoriaConSlowMotion()
+    {
+        Time.timeScale = 0.2f;
+        yield return new WaitForSecondsRealtime(1.5f);
+        Time.timeScale = 1f;
+        yield return new WaitForSecondsRealtime(0.5f);
+        pantallaVictoria.SetActive(true);
     }
 
     private IEnumerator MostrarPantallaConPausa(GameObject pantalla)

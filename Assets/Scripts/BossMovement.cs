@@ -12,20 +12,30 @@ public class BossMovement : MonoBehaviour
     [SerializeField] private float fuerzaSaltoY = 10f;
     [SerializeField] private float duracionSalto = 0.8f;
 
+    [Header("Bola de Fuego")]
+    [SerializeField] private GameObject prefabBolaDeFuego;
+    [SerializeField] private Transform puntoDisparo;
+    [SerializeField] private float velocidadBolaDeFuego = 6f;
+    [SerializeField] private int danioBolaDeFuego = 1;
+
     [Header("Tiempos")]
     [SerializeField] private float tiempoEsperaMinimo = 0.3f;
     [SerializeField] private float tiempoEsperaMaximo = 1f;
-    [SerializeField] private float probabilidadSalto = 0.6f;
+    [SerializeField] private float probabilidadSalto = 0.5f;
+    [SerializeField] private float probabilidadDisparo = 0.25f;
 
     [Header("Límite Cámara")]
     [SerializeField] private float margenCamara = 1f;
+
+    [Header("Visual")]
+    [SerializeField] private SpriteRenderer spriteRenderer;
 
     private Rigidbody2D rb;
     private Camera camara;
     private float posicionInicialX;
 
     // Estados del boss
-    public enum EstadoBoss { Idle, Caminando, Saltando, Regresando }
+    public enum EstadoBoss { Idle, Caminando, Saltando, Disparando, Regresando }
     public EstadoBoss estadoActual = EstadoBoss.Idle;
 
     private float tiempoEnEstado;
@@ -70,14 +80,13 @@ public class BossMovement : MonoBehaviour
 
     private void ElegirSiguienteEstado()
     {
-        if (Random.value < probabilidadSalto)
-        {
+        float random = Random.value;
+        if (random < probabilidadSalto)
             CambiarEstado(EstadoBoss.Saltando);
-        }
+        else if (random < probabilidadSalto + probabilidadDisparo)
+            CambiarEstado(EstadoBoss.Disparando);
         else
-        {
             CambiarEstado(EstadoBoss.Caminando);
-        }
     }
 
 
@@ -90,13 +99,68 @@ public class BossMovement : MonoBehaviour
         {
             duracionEstado = Random.Range(1f, 3f);
             rb.linearVelocity = Vector2.zero;
+            if (spriteRenderer != null) spriteRenderer.color = Color.white;
         }
         else if (nuevoEstado == EstadoBoss.Saltando)
         {
-            duracionEstado = duracionSalto + 1f; // Tiempo extra para que pueda golpear
-            rb.linearVelocity = new Vector2(fuerzaSaltoX, fuerzaSaltoY);
-            StartCoroutine(TerminarSalto());
+            duracionEstado = duracionSalto + 1.7f; // Tiempo extra incluyendo el telegrafeo
+            StartCoroutine(TelegrafiarYSaltar());
         }
+        else if (nuevoEstado == EstadoBoss.Disparando)
+        {
+            duracionEstado = 3f;
+            rb.linearVelocity = Vector2.zero;
+            StartCoroutine(TelegrafiarYDisparar());
+        }
+    }
+
+    private IEnumerator TelegrafiarYSaltar()
+    {
+        // Parpadeo naranja para avisar al jugador
+        if (spriteRenderer != null)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                spriteRenderer.color = Color.yellow;
+                yield return new WaitForSeconds(0.15f);
+                spriteRenderer.color = Color.white;
+                yield return new WaitForSeconds(0.1f);
+            }
+            spriteRenderer.color = Color.yellow; // amarillo durante el salto
+        }
+
+        rb.linearVelocity = new Vector2(fuerzaSaltoX, fuerzaSaltoY);
+        StartCoroutine(TerminarSalto());
+    }
+
+    private IEnumerator TelegrafiarYDisparar()
+    {
+        // Parpadeo morado para diferenciarlo del salto (naranja)
+        if (spriteRenderer != null)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                spriteRenderer.color = new Color(0.6f, 0f, 1f);
+                yield return new WaitForSeconds(0.15f);
+                spriteRenderer.color = Color.white;
+                yield return new WaitForSeconds(0.1f);
+            }
+        }
+
+        // Dispara la bola de fuego
+        if (prefabBolaDeFuego != null)
+        {
+            Vector3 origen = puntoDisparo != null ? puntoDisparo.position : transform.position;
+            GameObject bola = Instantiate(prefabBolaDeFuego, origen, Quaternion.identity);
+            BossFireball fireball = bola.GetComponent<BossFireball>();
+            if (fireball != null)
+                fireball.Inicializar(velocidadBolaDeFuego, danioBolaDeFuego);
+        }
+
+        yield return new WaitForSeconds(0.5f);
+
+        if (spriteRenderer != null) spriteRenderer.color = Color.white;
+        CambiarEstado(EstadoBoss.Caminando);
     }
 
     private IEnumerator TerminarSalto()
@@ -108,7 +172,6 @@ public class BossMovement : MonoBehaviour
         if (estadoActual == EstadoBoss.Saltando)
         {
             rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-            // Si no golpeó a nadie, camina normalmente
             CambiarEstado(EstadoBoss.Caminando);
         }
     }
@@ -124,6 +187,7 @@ public class BossMovement : MonoBehaviour
 
         rb.linearVelocity = Vector2.zero;
         rb.angularVelocity = 0f;
+        if (spriteRenderer != null) spriteRenderer.color = Color.white;
 
         // Calcula el límite de cámara y respeta el que sea menor
         float limiteDerecho = camara.ViewportToWorldPoint(new Vector3(1, 0, 0)).x - margenCamara;
