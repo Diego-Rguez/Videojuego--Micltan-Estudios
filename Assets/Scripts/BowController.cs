@@ -1,18 +1,22 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class BowController : MonoBehaviour
 {
     [Header("Configuración de Disparo")]
-    [SerializeField] private GameObject flechaPrefab;
     [SerializeField] private Transform puntoDeDisparo;
     [SerializeField] private float velocidadFlecha = 10f;
-    [SerializeField] private int danioFlecha = 10;
+    [SerializeField] private int danioMinimo = 5;
+    [SerializeField] private int danioMaximo = 30;
     [SerializeField] private float tiempoCargaMaxima = 2f;
 
     [Header("Trayectoria")]
     [SerializeField] private LineRenderer lineaTrayectoria;
     [SerializeField] private int puntosTrayectoria = 20;
     [SerializeField] private float distanciaTrayectoria = 5f;
+
+    [Header("Indicador de carga")]
+    [SerializeField] private Image indicadorCarga;
 
     private float tiempoCargaActual = 0f;
     private bool cargando = false;
@@ -22,6 +26,7 @@ public class BowController : MonoBehaviour
     void Start()
     {
         playerMovement = GetComponentInParent<PlayerMovement>();
+        if (indicadorCarga != null) indicadorCarga.gameObject.SetActive(false);
     }
 
     void Update()
@@ -49,6 +54,7 @@ public class BowController : MonoBehaviour
         tiempoCargaActual = 0f;
         cargando = true;
         lineaTrayectoria.enabled = true;
+        if (indicadorCarga != null) indicadorCarga.gameObject.SetActive(true);
         playerMovement?.BloquearMovimiento();
     }
 
@@ -57,20 +63,20 @@ public class BowController : MonoBehaviour
         float porcentajeCarga = tiempoCargaActual / tiempoCargaMaxima;
         float velocidadFinal = velocidadFlecha * porcentajeCarga;
 
-        if (porcentajeCarga >= 0.1f)
+        if (porcentajeCarga >= 0.1f && ProjectilePool.Instancia != null)
         {
-            GameObject flechaObj = Instantiate(flechaPrefab, puntoDeDisparo.position, Quaternion.identity);
-            ArrowController flecha = flechaObj.GetComponent<ArrowController>();
-
-            if (flecha != null)
-            {
-                flecha.Inicializar(direccionDisparo, velocidadFinal, danioFlecha);
-            }
+            int danioFinal = Mathf.RoundToInt(Mathf.Lerp(danioMinimo, danioMaximo, porcentajeCarga));
+            ArrowController flecha = ProjectilePool.Instancia.ObtenerFlecha(
+                puntoDeDisparo.position,
+                Quaternion.identity
+            );
+            flecha.Inicializar(direccionDisparo, velocidadFinal, danioFinal);
         }
 
         tiempoCargaActual = 0f;
         cargando = false;
         lineaTrayectoria.enabled = false;
+        if (indicadorCarga != null) indicadorCarga.gameObject.SetActive(false);
         playerMovement?.DesbloquearMovimiento();
     }
 
@@ -117,5 +123,17 @@ public class BowController : MonoBehaviour
     {
         tiempoCargaActual = Mathf.Min(tiempoCargaActual + Time.deltaTime, tiempoCargaMaxima);
         MostrarTrayectoria();
+        ActualizarIndicador();
+    }
+
+    private void ActualizarIndicador()
+    {
+        if (indicadorCarga == null) return;
+
+        float porcentaje = tiempoCargaActual / tiempoCargaMaxima;
+        indicadorCarga.fillAmount = porcentaje;
+
+        // Verde → amarillo → rojo según el porcentaje de carga
+        indicadorCarga.color = Color.Lerp(Color.green, Color.red, porcentaje);
     }
 }

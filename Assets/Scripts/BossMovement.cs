@@ -13,7 +13,6 @@ public class BossMovement : MonoBehaviour
     [SerializeField] private float duracionSalto = 0.8f;
 
     [Header("Bola de Fuego")]
-    [SerializeField] private GameObject prefabBolaDeFuego;
     [SerializeField] private Transform puntoDisparo;
     [SerializeField] private float velocidadBolaDeFuego = 6f;
     [SerializeField] private int danioBolaDeFuego = 1;
@@ -148,13 +147,11 @@ public class BossMovement : MonoBehaviour
         }
 
         // Dispara la bola de fuego
-        if (prefabBolaDeFuego != null)
+        if (ProjectilePool.Instancia != null)
         {
             Vector3 origen = puntoDisparo != null ? puntoDisparo.position : transform.position;
-            GameObject bola = Instantiate(prefabBolaDeFuego, origen, Quaternion.identity);
-            BossFireball fireball = bola.GetComponent<BossFireball>();
-            if (fireball != null)
-                fireball.Inicializar(velocidadBolaDeFuego, danioBolaDeFuego);
+            BossFireball fireball = ProjectilePool.Instancia.ObtenerFireball(origen);
+            fireball.Inicializar(velocidadBolaDeFuego, danioBolaDeFuego);
         }
 
         yield return new WaitForSeconds(0.5f);

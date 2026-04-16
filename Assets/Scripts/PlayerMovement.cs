@@ -16,10 +16,12 @@ public class PlayerMovement : MonoBehaviour
     private bool enElSuelo = true;
     private float posicionYInicial;
     private bool estaDisparando = false;
+    private Animator animator;
 
     void Start()
     {
         posicionYInicial = transform.position.y;
+        animator = GetComponent<Animator>();
     }
 
     void Update()
@@ -30,11 +32,18 @@ public class PlayerMovement : MonoBehaviour
 
     private void ManejarMovimientoHorizontal()
     {
-        if (estaDisparando) return;
+        if (estaDisparando)
+        {
+            if (animator != null) animator.SetBool("Caminando", false);
+            return;
+        }
 
         float horizontalInput = Input.GetAxisRaw("Horizontal");
 
         if (horizontalInput > 0) horizontalInput = 0;
+
+        bool moviendose = horizontalInput < 0;
+        if (animator != null) animator.SetBool("Caminando", moviendose);
 
         foreach (Transform pieza in piezas)
         {
